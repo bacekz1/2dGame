@@ -14,6 +14,8 @@ public class Game {
     public static void main(String[] args) {
         //да оправя случая когато храстите запушват изхода
         //fix difficult percents
+        //да оправя търсенето в рекурцията
+        //да видя дали може move switch-a да се направи в метод...
         Scanner sc = new Scanner(System.in);
         System.out.println("Please select difficult from 1 to 3");
         char difficult;
@@ -58,10 +60,10 @@ public class Game {
         //add borders and replace char 0 with ' '
         fillMatrix(matrix);
         //add the exit
-        matrix[matrix.length - 2][matrix.length - 2] = exit;
+        matrix[matrix.length - 1][matrix.length - 1] = exit;
         //add the people
-        int peopleRow = giveMeRandomNum( matrixLength - 2);
-        int peopleCol = giveMeRandomNum( matrixLength - 2);
+        int peopleRow = giveMeRandomNum(matrixLength - 1);
+        int peopleCol = giveMeRandomNum(matrixLength - 1);
         matrix[peopleRow][peopleCol] = people;
 
         //adds the bushes
@@ -73,11 +75,11 @@ public class Game {
                 matrix[bushRow][bushCol] = bush;
                 count--;
                 //set bushCol position if bush spawn near down border
-                if (bushRow == matrixLength - 2 && bushCol > downBorderBushPosition) {
+                if (bushRow == matrixLength - 1 && bushCol > downBorderBushPosition) {
                     downBorderBushPosition = bushCol;
                 }
                 //set bushRow position if bush spawn near right border
-                if (bushCol == matrixLength - 2 && bushRow > rightBorderBushPosition) {
+                if (bushCol == matrixLength - 1 && bushRow > rightBorderBushPosition) {
                     rightBorderBushPosition = bushRow;
                 }
             }
@@ -85,14 +87,19 @@ public class Game {
 
         //add the rock
         while (true) {
-            rockRow = giveMeRandomNum(matrixLength / 2);
-            rockCol = giveMeRandomNum(matrixLength / 2);
-            if (canSpawnRock(matrix, rockRow, rockCol) && canRockMove(matrix, rockRow, rockCol)) {
+            rockRow = giveMeRandomNum(1, matrixLength / 2);
+            rockCol = giveMeRandomNum(1, matrixLength / 2);
+
+            if (canSpawnRock(matrix, rockRow, rockCol) &&
+                    isRockStuck(matrix, rockRow, rockCol, rightBorderBushPosition, downBorderBushPosition)) {
                 matrix[rockRow][rockCol] = rock;
                 break;
             }
         }
         System.out.println("You can move with w = forward, a = left, s = backward and d = right");
+
+//        System.out.println(findPathToTheRockRecursively(matrix, rockRow, rockCol,
+//                rightBorderBushPosition,downBorderBushPosition));
 
         printMatrix(matrix);
 
@@ -104,7 +111,7 @@ public class Game {
                 //up
                 case 'w' -> {
                     //game over
-                    if (isOutOfBounds(matrix, peopleRow - 1)) {
+                    if (isItOutOfBounds(matrix, peopleRow - 1)) {
                         gameOver = true;
                         break;
                     }
@@ -116,7 +123,7 @@ public class Game {
                     if (matrix[peopleRow - 1][peopleCol] == rock) {
                         rockRow = peopleRow - 1;
                         //game over
-                        if (isOutOfBounds(matrix, rockRow - 1)) {
+                        if (isItOutOfBounds(matrix, rockRow - 1)) {
                             gameOver = true;
                             break;
                         }
@@ -135,7 +142,7 @@ public class Game {
                 //left
                 case 'a' -> {
                     //game over
-                    if (isOutOfBounds(matrix, peopleCol - 1)) {
+                    if (isItOutOfBounds(matrix, peopleCol - 1)) {
                         gameOver = true;
                         break;
                     }
@@ -147,7 +154,7 @@ public class Game {
                     if (matrix[peopleRow][peopleCol - 1] == rock) {
                         rockCol = peopleCol - 1;
                         //game over
-                        if (isOutOfBounds(matrix, rockCol - 1)) {
+                        if (isItOutOfBounds(matrix, rockCol - 1)) {
                             gameOver = true;
                             break;
                         }
@@ -167,7 +174,7 @@ public class Game {
                 //down
                 case 's' -> {
                     //game over
-                    if (isOutOfBounds(matrix, peopleRow + 1)) {
+                    if (isItOutOfBounds(matrix, peopleRow + 1)) {
                         gameOver = true;
                         break;
                     }
@@ -183,7 +190,7 @@ public class Game {
                     if (matrix[peopleRow + 1][peopleCol] == rock) {
                         rockRow = peopleRow + 1;
                         //game over
-                        if (isOutOfBounds(matrix, rockRow + 1)) {
+                        if (isItOutOfBounds(matrix, rockRow + 1)) {
                             gameOver = true;
                             continue;
                         }
@@ -203,7 +210,7 @@ public class Game {
                 //right
                 case 'd' -> {
                     //game over
-                    if (isOutOfBounds(matrix, peopleCol + 1)) {
+                    if (isItOutOfBounds(matrix, peopleCol + 1)) {
                         gameOver = true;
                         break;
                     }
@@ -218,7 +225,7 @@ public class Game {
                     if (matrix[peopleRow][peopleCol + 1] == rock) {
                         rockCol = peopleCol + 1;
                         //game over
-                        if (isOutOfBounds(matrix, rockCol + 1)) {
+                        if (isItOutOfBounds(matrix, rockCol + 1)) {
                             gameOver = true;
                             break;
                         }
@@ -236,16 +243,16 @@ public class Game {
                     matrix[peopleRow][++peopleCol] = people;
                 }
             }
+
             //success condition
-            if (rockRow == matrixLength - 2 && rockCol == matrixLength - 2) {
+            if (rockRow == matrixLength - 1 && rockCol == matrixLength - 1) {
                 success = true;
                 break;
             }
 
             //Rock game over logic
-            if (!canRockMove(matrix, rockRow, rockCol)
-                    || (rockCol == matrixLength - 2 && rightBorderBushPosition > rockRow)
-                    || (rockRow == matrixLength - 2 && downBorderBushPosition > rockCol)) {
+            if (!isRockStuck(matrix, rockRow, rockCol
+                    , rightBorderBushPosition, downBorderBushPosition)) {
                 System.out.println("The rock can`t move :=/");
                 gameOver = true;
                 break;
@@ -265,16 +272,22 @@ public class Game {
         }
 
     }
+
+    static int giveMeRandomNum(int from, int to) {
+        Random random = new Random();
+        return random.nextInt(from, to);
+    }
+
     static int giveMeRandomNum(int to) {
         Random random = new Random();
         return random.nextInt(to);
     }
 
     static boolean canSpawnBush(char[][] matrix, int row, int col) {
-        if (row == matrix.length - 2 && col < matrix.length - 3) {
+        if (row == matrix.length - 1 && col < matrix.length - 1) {
             col++;
         }
-        if (col == matrix.length - 2 && row < matrix.length - 3) {
+        if (col == matrix.length - 1 && row < matrix.length - 1) {
             row++;
         }
         return (matrix[row][col] != people && matrix[row][col] != rowBorder
@@ -282,50 +295,82 @@ public class Game {
     }
 
     static boolean canSpawnRock(char[][] matrix, int row, int col) {
-        return (matrix[row][col] != people && matrix[row][col] != rowBorder
-                && matrix[row][col] != colBorder && matrix[row][col] != exit && matrix[row][col] != bush);
+        return (matrix[row][col] != people && matrix[row][col] != exit && matrix[row][col] != bush);
     }
 
-    static boolean canRockMove(char[][] matrix, int rockRow, int rockCol) {
+    static boolean isRockStuck(char[][] matrix, int rockRow, int rockCol,
+                               int rightBorderBushPosition, int downBorderBushPosition) {
+        boolean upBorder = rockRow < 1;
+        boolean leftBorder = rockCol < 1;
+        boolean downBorder = rockCol <= matrix.length - 1 && rightBorderBushPosition > rockRow;
+        boolean rightBorder = rockRow <= matrix.length - 1 && downBorderBushPosition > rockCol;
+        boolean leftBush = rockCol > 0 && matrix[rockRow][rockCol - 1] == bush;
+        boolean rightBush = rockCol < matrix.length - 1 && matrix[rockRow][rockCol + 1] == bush;
+        boolean upBush = rockRow > 0 && matrix[rockRow - 1][rockCol] == bush;
+        boolean downBush = rockRow < matrix.length - 1 && matrix[rockRow + 1][rockCol] == bush;
 
-        boolean leftBush = matrix[rockRow][rockCol - 1] == bush;
-        boolean rightBush = matrix[rockRow][rockCol + 1] == bush;
-        boolean upBush = matrix[rockRow - 1][rockCol] == bush;
-        boolean downBush = matrix[rockRow + 1][rockCol] == bush;
-        boolean upBorder = matrix[rockRow - 1][rockCol] == rowBorder;
-        boolean leftBorder = matrix[rockRow][rockCol - 1] == colBorder;
+
         //if the rock is stuck return false
-        return !((leftBush && upBush) || (leftBush && downBush) ||
-                (rightBush && upBush) || (rightBush && downBush)
-                || upBorder || leftBorder);
+        return !(upBorder || leftBorder || downBorder || rightBorder || (leftBush && upBush) || (leftBush && downBush) ||
+                (rightBush && upBush) || (rightBush && downBush));
     }
 
     static void printMatrix(char[][] matrix) {
-        for (char[] ints : matrix) {
-            for (char anInt : ints) {
-                System.out.print(anInt + " ");
+        for (int row = 0; row < matrix.length; row++) {
+
+            if (row == 0) {
+                for (int i = 0; i < matrix.length + 2; i++) {
+                    System.out.print(rowBorder);
+                    if (i == matrix.length + 1) {
+                        System.out.println();
+                    }
+                }
+
             }
+            System.out.print(colBorder);
+            for (int col = 0; col < matrix[row].length; col++) {
+                System.out.print(matrix[row][col]);
+            }
+
+            System.out.print(colBorder);
+
             System.out.println();
+            if (row == matrix.length - 1) {
+                for (int i = 0; i < matrix.length + 2; i++) {
+                    System.out.print(rowBorder);
+                }
+            }
+
         }
     }
 
     static void fillMatrix(char[][] matrix) {
         for (int row = 0; row < matrix.length; row++) {
-
             for (int col = 0; col < matrix.length; col++) {
-                if (row == 0 || row == matrix.length - 1) {
-                    matrix[row][col] = rowBorder;
-                } else if (col == 0 || col == matrix.length - 1) {
-                    matrix[row][col] = colBorder;
-                } else {
-                    matrix[row][col] = empty;
-                }
-
+                matrix[row][col] = empty;
             }
         }
     }
 
-    static boolean isOutOfBounds(char[][] matrix, int position) {
-        return (position == 0 || position == matrix.length - 1);
+    static boolean isItOutOfBounds(char[][] matrix, int position) {
+        return (position < 0 || position > matrix.length - 1);
+    }
+
+    static boolean findPathToTheRockRecursively(char[][] matrix, int row, int col,
+                                                int right, int down) {
+        if (matrix[row][col] == exit) {
+            return true;
+        }
+
+        if (!isRockStuck(matrix, row, col, right, down)) {
+            return false;
+        }
+        matrix[row][col] = 'r';
+
+        return findPathToTheRockRecursively(matrix, row + 2, col, right, down) ||
+                findPathToTheRockRecursively(matrix, row, col + 2, right, down) ||
+                findPathToTheRockRecursively(matrix, row, col - 2, right, down) ||
+                findPathToTheRockRecursively(matrix, row - 2, col, right, down);
+
     }
 }
